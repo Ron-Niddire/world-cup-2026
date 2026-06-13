@@ -41,7 +41,8 @@
     position:relative;
     color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
-    line-height:1.4; padding-bottom:48px;
+    line-height:1.4; padding-bottom:calc(48px + env(safe-area-inset-bottom,0px));
+    padding-top:env(safe-area-inset-top,0px);
     -webkit-font-smoothing:antialiased;
   }
   .wrap{max-width:680px;margin:0 auto;padding:0 14px}
@@ -82,7 +83,7 @@
   .qchip{display:inline-block;font:700 10px/1 -apple-system;letter-spacing:.1em;color:var(--qatar-ink);background:var(--qatar-tint);border:1px solid #1c3a5c;padding:4px 7px;border-radius:6px;text-transform:uppercase}
 
   /* filters */
-  .filters{display:flex;gap:7px;margin:18px 0 6px;position:sticky;top:0;z-index:30;
+  .filters{display:flex;gap:7px;margin:18px 0 6px;position:sticky;top:env(safe-area-inset-top,0px);z-index:30;
     padding:10px 0;background:linear-gradient(180deg,var(--bg) 70%,transparent)}
   .filters button{
     flex:1;font:600 13px/1 -apple-system,system-ui;letter-spacing:.02em;
@@ -101,7 +102,7 @@
 
   /* day groups */
   .day{font-family:"Barlow Condensed";font-weight:700;font-size:15px;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--gold);padding:18px 4px 9px;position:sticky;top:54px;background:var(--bg);z-index:10;
+    color:var(--gold);padding:18px 4px 9px;position:sticky;top:calc(54px + env(safe-area-inset-top,0px));background:var(--bg);z-index:10;
     border-bottom:1px solid var(--line)}
   .day .n{color:var(--faint);font-weight:600;margin-left:8px;letter-spacing:.08em}
 
@@ -129,8 +130,17 @@
   .pill.soon{color:var(--pitch);border:1px solid #6b5418}
   .flag{font-size:14px}
   .empty{text-align:center;color:var(--faint);padding:50px 20px;font-size:14px}
-  footer{color:var(--faint);font-size:11px;line-height:1.6;padding:26px 4px 0;border-top:1px solid var(--line);margin-top:22px}
-  footer b{color:var(--mut);font-weight:600}
+  #updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:90;
+    background:linear-gradient(180deg,#F7C843,#C9921F);color:#241a02;font:700 13.5px/1 -apple-system,system-ui;
+    padding:13px 18px;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.55);cursor:pointer;white-space:nowrap;animation:updin .35s ease}
+  @keyframes updin{from{transform:translate(-50%,90px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+  .picker-ov{position:fixed;inset:0;background:rgba(2,7,19,.82);z-index:100;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
+  .picker{background:var(--card);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;width:100%;max-width:680px;max-height:72vh;overflow:auto;padding:18px 14px 26px}
+  .ptitle{font-family:"Barlow Condensed";font-weight:700;font-size:21px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:0 4px 12px}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:8px}
+  .pteam{font:600 13.5px/1.2 -apple-system,system-ui;color:var(--ink);background:var(--card2);border:1px solid var(--line);padding:11px 8px;border-radius:10px;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pteam.sel{background:var(--qatar);border-color:var(--qatar);color:#fff;font-weight:700}
+  .pteam:active{transform:scale(.97)}
   @media(max-width:420px){h1{font-size:25px}h1 small{letter-spacing:.2em}.applogo{width:48px;height:48px;border-radius:12px}.countdown{font-size:46px}.rail .teams{font-size:21px}}
 </style>
 </head>
@@ -152,18 +162,13 @@
 
   <div class="filters">
     <button data-f="all" class="on">All</button>
-    <button data-f="qatar" class="q">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland</button>
+    <button data-f="qatar" class="q" id="favBtn">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland ▾</button>
     <button data-f="today">Today</button>
     <button data-f="live">Live</button>
   </div>
   <div class="feed" id="feed"><i></i><span>Connecting to live scores…</span></div>
 
   <div id="list"></div>
-
-  <footer>
-    All kick-offs are shown in <b>your device's time zone</b> — share this link with anyone, anywhere, and they'll see their own local times automatically.
-    Status (LIVE / FT) is computed from the clock so it stays right even offline. Scores come from the free TheSportsDB World Cup feed and may lag the broadcast by a minute or two. Knockout fixtures fill in teams automatically once the groups finish.
-  </footer>
 </div>
 
 <script>
@@ -289,7 +294,7 @@ const F = [
  ["2026-07-18T21:00Z","TBD","TBD","3RD","Miami Stadium","Miami"],
  ["2026-07-19T19:00Z","TBD","TBD","FINAL","New York New Jersey Stadium","New Jersey"],
 ].map((r,i)=>({i,ko:new Date(r[0]),h:r[1],a:r[2],g:r[3],v:r[4],c:r[5],
-   qatar:(r[1]==="Scotland"||r[2]==="Scotland"),
+   qatar:false,
    ko_known:(r[1]!=="TBD")}));
 
 const STAGE_LABEL={R32:"Round of 32",R16:"Round of 16",QF:"Quarter-final",SF:"Semi-final","3RD":"3rd place","FINAL":"Final"};
@@ -316,45 +321,92 @@ function statusOf(m){
 /* ---------- live score feed (TheSportsDB) ---------- */
 const KEY = PREMIUM_KEY || FREE_KEY;
 function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-  .replace(/&/g,"and").replace(/[^a-z ]/g,"").trim();}
+  .replace(/&/g," and ").replace(/[^a-z]+/g," ").trim();}
 const ALIAS={
- "united states":"usa","us":"usa","korea republic":"south korea","ir iran":"iran",
- "cote divoire":"ivory coast","czech republic":"czechia","turkey":"turkiye",
+ "united states":"usa","united states of america":"usa","us":"usa",
+ "korea republic":"south korea","korea":"south korea",
+ "ir iran":"iran","iran islamic republic of":"iran",
+ "cote d ivoire":"ivory coast","cote divoire":"ivory coast",
+ "czech republic":"czechia","turkey":"turkiye",
  "bosnia and herzegovina":"bosnia and herz","bosnia herzegovina":"bosnia and herz",
- "congo dr":"dr congo","dr congo":"dr congo","cabo verde":"cape verde",
- "new zealand":"new zealand"
+ "congo dr":"dr congo","democratic republic of congo":"dr congo","dr congo":"dr congo",
+ "cabo verde":"cape verde"
 };
 const key=s=>{const n=norm(s);return ALIAS[n]||n;};
+
+/* ---------- favourite team (per-device, saved in the browser) ---------- */
+const FLAGS={"Mexico":"🇲🇽","South Africa":"🇿🇦","South Korea":"🇰🇷","Czechia":"🇨🇿","Canada":"🇨🇦",
+"Bosnia & Herz.":"🇧🇦","USA":"🇺🇸","Paraguay":"🇵🇾","Qatar":"🇶🇦","Switzerland":"🇨🇭","Brazil":"🇧🇷",
+"Morocco":"🇲🇦","Haiti":"🇭🇹","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Australia":"🇦🇺","Türkiye":"🇹🇷","Germany":"🇩🇪",
+"Curaçao":"🇨🇼","Netherlands":"🇳🇱","Japan":"🇯🇵","Ivory Coast":"🇨🇮","Ecuador":"🇪🇨","Sweden":"🇸🇪",
+"Tunisia":"🇹🇳","Spain":"🇪🇸","Cape Verde":"🇨🇻","Belgium":"🇧🇪","Egypt":"🇪🇬","Saudi Arabia":"🇸🇦",
+"Uruguay":"🇺🇾","Iran":"🇮🇷","New Zealand":"🇳🇿","France":"🇫🇷","Senegal":"🇸🇳","Iraq":"🇮🇶",
+"Norway":"🇳🇴","Argentina":"🇦🇷","Algeria":"🇩🇿","Austria":"🇦🇹","Jordan":"🇯🇴","Portugal":"🇵🇹",
+"DR Congo":"🇨🇩","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦","Uzbekistan":"🇺🇿","Colombia":"🇨🇴"};
+const DEFAULT_FAV="Scotland";
+let FAV=DEFAULT_FAV;
+try{FAV=localStorage.getItem("wc26-fav")||DEFAULT_FAV;}catch(e){}
+const favFlag=()=>FLAGS[FAV]||"⚽";
+function applyFav(){
+  F.forEach(m=>{m.qatar=m.ko_known&&(key(m.h)===key(FAV)||key(m.a)===key(FAV));});
+  const b=document.getElementById("favBtn");
+  if(b)b.textContent=`${favFlag()} ${FAV} ▾`;
+}
+function openPicker(){
+  const teams=[...new Set(F.filter(m=>m.ko_known).flatMap(m=>[m.h,m.a]))].sort((a,b)=>a.localeCompare(b));
+  const ov=document.createElement("div");ov.className="picker-ov";
+  ov.innerHTML=`<div class="picker"><div class="ptitle">Pick your team</div><div class="pgrid">${
+    teams.map(t=>`<button class="pteam${t===FAV?" sel":""}" data-t="${t}">${FLAGS[t]||"⚽"} ${t}</button>`).join("")
+  }</div></div>`;
+  ov.addEventListener("click",e=>{
+    if(e.target===ov){ov.remove();return;}
+    const b=e.target.closest(".pteam");if(!b)return;
+    FAV=b.dataset.t;
+    try{localStorage.setItem("wc26-fav",FAV);}catch(err){}
+    applyFav();render();ov.remove();
+  });
+  document.body.appendChild(ov);
+}
+applyFav();
 
 const WC_LEAGUE_ID = 4429; // FIFA World Cup on TheSportsDB
 
 function absorbEvent(ev){
   if(!/world cup/i.test(ev.strLeague||"")) return 0;
   const hk=key(ev.strHomeTeam), ak=key(ev.strAwayTeam);
+  const ts=Date.parse((ev.strTimestamp||ev.dateEvent+"T"+(ev.strTime||"00:00:00"))+ (ev.strTimestamp?"":"Z"));
   let m=F.find(x=>x.ko_known && key(x.h)===hk && key(x.a)===ak);
-  if(!m){
+  if(!m && !isNaN(ts)){
+    // fuzzy: same kick-off window and at least one team name recognised (either side)
+    const c=F.filter(x=>x.ko_known && Math.abs(x.ko.getTime()-ts)<45*60000 &&
+      (key(x.h)===hk||key(x.a)===ak||key(x.h)===ak||key(x.a)===hk));
+    if(c.length===1) m=c[0];
+  }
+  if(!m && !isNaN(ts)){
     // knockout fixture? match TBD slots by kick-off time (+ city if two games share a slot)
-    const ts=Date.parse((ev.strTimestamp||ev.dateEvent+"T"+(ev.strTime||"00:00:00"))+ (ev.strTimestamp?"":"Z"));
-    if(!isNaN(ts)){
-      const cands=F.filter(x=>!x.ko_known && Math.abs(x.ko.getTime()-ts)<45*60000);
-      if(cands.length===1) m=cands[0];
-      else if(cands.length>1){
-        const vn=norm(ev.strVenue||"");
-        m=cands.find(x=>vn && (vn.includes(norm(x.c))||norm(x.v).includes(vn)));
-      }
-      if(m){ m.h=ev.strHomeTeam; m.a=ev.strAwayTeam; m.ko_known=true;
-             m.qatar=(key(m.h)==="scotland"||key(m.a)==="scotland"); }
+    const cands=F.filter(x=>!x.ko_known && Math.abs(x.ko.getTime()-ts)<45*60000);
+    if(cands.length===1) m=cands[0];
+    else if(cands.length>1){
+      const vn=norm(ev.strVenue||"");
+      m=cands.find(x=>vn && (vn.includes(norm(x.c))||norm(x.v).includes(vn)));
     }
+    if(m){ m.h=ev.strHomeTeam; m.a=ev.strAwayTeam; m.ko_known=true;
+           m.qatar=(key(m.h)===key(FAV)||key(m.a)===key(FAV)); }
   }
   if(!m) return 0;
   if(ev.intHomeScore!=null&&ev.intHomeScore!==""){
-    scores[m.i]={hs:ev.intHomeScore,as:ev.intAwayScore,status:ev.strStatus||ev.strProgress||"",min:ev.strProgress||""};
+    const swapped=(key(m.h)===ak && key(m.a)===hk);
+    scores[m.i]={hs:swapped?ev.intAwayScore:ev.intHomeScore,
+                 as:swapped?ev.intHomeScore:ev.intAwayScore,
+                 status:ev.strStatus||ev.strProgress||"",min:ev.strProgress||""};
     return 1;
   }
   return 0;
 }
 
 let seasonLoadedAt=0;
+function fetchT(url,ms=10000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);
+  return fetch(url,{cache:"no-store",signal:c.signal}).finally(()=>clearTimeout(t));}
 async function pullScores(){
   const feed=document.getElementById("feed");
   let got=0, ok=false;
@@ -362,7 +414,7 @@ async function pullScores(){
   // 1) season-wide results (all played matches keep their scores) — refresh every 10 min
   if(Date.now()-seasonLoadedAt>10*60000){
     try{
-      const res=await fetch(`https://www.thesportsdb.com/api/v1/json/${KEY}/eventsseason.php?id=${WC_LEAGUE_ID}&s=2026`,{cache:"no-store"});
+      const res=await fetchT(`https://www.thesportsdb.com/api/v1/json/${KEY}/eventsseason.php?id=${WC_LEAGUE_ID}&s=2026`);
       if(res.ok){const data=await res.json(); ok=true; seasonLoadedAt=Date.now();
         (data.events||[]).forEach(ev=>{got+=absorbEvent(ev);});}
     }catch(e){}
@@ -372,7 +424,7 @@ async function pullScores(){
   for(let off=-1;off<=0;off++){
     const d=new Date(Date.now()+off*864e5).toISOString().slice(0,10);
     try{
-      const res=await fetch(`https://www.thesportsdb.com/api/v1/json/${KEY}/eventsday.php?d=${d}&s=Soccer`,{cache:"no-store"});
+      const res=await fetchT(`https://www.thesportsdb.com/api/v1/json/${KEY}/eventsday.php?d=${d}&s=Soccer`);
       if(!res.ok) continue;
       const data=await res.json(); ok=true;
       (data.events||[]).forEach(ev=>{got+=absorbEvent(ev);});
@@ -405,7 +457,7 @@ function renderRail(){
     const m=lives[0], s=scores[m.i];
     rail.className="rail islive";
     rail.innerHTML=`<div class="top"><span class="live-dot"><i></i>Live now</span>
-      ${m.qatar?'<span class="qchip">Scotland</span>':`<span class="badge">Group ${m.g}</span>`}</div>
+      ${m.qatar?'<span class="qchip">'+FAV+'</span>':`<span class="badge">Group ${m.g}</span>`}</div>
       <div class="match">
         <div class="teams">${m.h} <span style="color:var(--faint)">v</span> ${m.a}
           <div class="meta">${m.v} · ${m.c}${lives.length>1?` &nbsp;·&nbsp; +${lives.length-1} more live`:""}</div></div>
@@ -422,11 +474,11 @@ function renderRail(){
   const qn=nextMatch(true);
   const sameQ=qn&&qn.i===m.i;
   rail.innerHTML=`<div class="top"><span class="badge">Next kick-off</span>
-      ${m.qatar?'<span class="qchip">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland</span>':`<span class="badge">${m.ko_known?'Group '+m.g:STAGE_LABEL[m.g]}</span>`}</div>
+      ${m.qatar?'<span class="qchip">'+favFlag()+' '+FAV+'</span>':`<span class="badge">${m.ko_known?'Group '+m.g:STAGE_LABEL[m.g]}</span>`}</div>
     <div class="countdown tnum ${m.qatar?'q':''}">${cd}</div>
     <div class="match"><div class="teams">${m.ko_known?`${m.h} <span style="color:var(--faint)">v</span> ${m.a}`:STAGE_LABEL[m.g]}
       <div class="meta">${dohaTime(m.ko)} · ${m.v} · ${m.c}</div>
-      ${(!sameQ&&qn)?`<div class="meta" style="margin-top:6px;color:var(--qatar-ink)">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Next Scotland: ${qn.h} v ${qn.a} · ${dohaDayLong(qn.ko)} ${dohaTime(qn.ko)}</div>`:""}
+      ${(!sameQ&&qn)?`<div class="meta" style="margin-top:6px;color:var(--qatar-ink)">${favFlag()} Next ${FAV}: ${qn.h} v ${qn.a} · ${dohaDayLong(qn.ko)} ${dohaTime(qn.ko)}</div>`:""}
     </div></div>`;
 }
 function fmtCountdown(ms){
@@ -464,8 +516,8 @@ function render(){
     let center;
     if(m.ko_known){
       center = sc
-        ? `<span>${m.qatar?'<span class="flag">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span> ':''}${m.h}</span> <span class="sc">${sc}</span> <span>${m.a}</span>`
-        : `<span>${m.qatar?'<span class="flag">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span> ':''}${m.h}</span> <span class="vs">v</span> <span>${m.a}</span>`;
+        ? `<span>${m.qatar?'<span class="flag">'+favFlag()+'</span> ':''}${m.h}</span> <span class="sc">${sc}</span> <span>${m.a}</span>`
+        : `<span>${m.qatar?'<span class="flag">'+favFlag()+'</span> ':''}${m.h}</span> <span class="vs">v</span> <span>${m.a}</span>`;
     }else{
       center = `<span style="color:var(--gold)">${stage}</span>`;
     }
@@ -501,9 +553,31 @@ document.getElementById("applogo").src=document.querySelector('link[rel="apple-t
 setInterval(render,30000);            // refresh statuses
 pullScores(); setInterval(pullScores,SCORE_REFRESH_MS);
 
+/* ---------- update notifier ---------- */
+let pageTag=null;
+async function checkUpdate(){
+  if(!/^https?:/.test(location.protocol)) return;     // skip when opened as a local file
+  try{
+    const r=await fetch(location.href,{method:"HEAD",cache:"no-store"});
+    const tag=r.headers.get("etag")||r.headers.get("last-modified");
+    if(!tag) return;
+    if(pageTag===null){pageTag=tag;return;}            // remember the version we're running
+    if(tag!==pageTag&&!document.getElementById("updbar")){
+      const b=document.createElement("div");b.id="updbar";
+      b.textContent="⚽ App updated — tap to reload";
+      b.onclick=()=>location.reload();
+      document.body.appendChild(b);
+    }
+  }catch(e){}
+}
+checkUpdate(); setInterval(checkUpdate,5*60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate();});
+
 /* ---------- filters ---------- */
 document.querySelectorAll(".filters button").forEach(b=>{
-  b.onclick=()=>{document.querySelectorAll(".filters button").forEach(x=>x.classList.remove("on"));
+  b.onclick=()=>{
+    if(b.dataset.f==="qatar"&&filter==="qatar"){openPicker();return;}
+    document.querySelectorAll(".filters button").forEach(x=>x.classList.remove("on"));
     b.classList.add("on");filter=b.dataset.f;render();
     if(filter!=="live")window.scrollTo({top:document.querySelector(".filters").offsetTop-8,behavior:"instant"});};
 });
